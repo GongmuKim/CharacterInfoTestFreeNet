@@ -55,16 +55,24 @@ namespace CSampleServer
 
                         CPacket response = CPacket.create((short)PROTOCOL.ACCOUNT_LOGIN_ACK);
 
-                        if (AccountCheckLogin(id, pw))
+						if (id.Length <= 0 || pw.Length <= 0)
 						{
-                            response.push("Success");
+                            response.push("Fail\n");
                             send(response);
                         }
                         else
 						{
-                            response.push("Fail");
-                            send(response);
-                        }
+							if (AccountCheckLogin(id, pw))
+							{
+                                response.push(string.Format("Success\n{0}", id));
+                                send(response);
+							}
+							else
+							{
+								response.push("Fail\n");
+								send(response);
+							}
+						}
                     }
 					break;
 				case PROTOCOL.ACCOUNT_CREATE_REQ:
@@ -75,18 +83,34 @@ namespace CSampleServer
 
                         CPacket response = CPacket.create((short)PROTOCOL.ACCOUNT_CREATE_ACK);
 
-                        if (CreateAccount(id, pw) == true)
-						{
-                            response.push("Success");
-                            send(response);
-                        }
-                        else
+						if (id.Length <= 0 || pw.Length <= 0)
 						{
                             response.push("Fail");
                             send(response);
                         }
+                        else
+						{
+							if (CreateAccount(id, pw) == true)
+							{
+								response.push("Success");
+								send(response);
+							}
+							else
+							{
+								response.push("Fail");
+								send(response);
+							}
+						}
                     }
                     break;
+				case PROTOCOL.CHARACTER_DATA_GET_REQ:
+					{
+                        string id = msg.pop_string();
+                        CPacket response = CPacket.create((short)PROTOCOL.CHARACTER_DATA_GET_ACK);
+                        response.push(GetCharacterInfo(id));
+                        send(response);
+                    }
+					break;
             }
         }
 

@@ -7,46 +7,59 @@ using System.Threading.Tasks;
 using FreeNet;
 using GameServer;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 
 namespace CSampleServer
 {
-	class Program
-	{
+    class Program
+    {
         static MySqlConnection conn;
-		static List<CGameUser> userlist;
+        static List<CGameUser> userlist;
+
+        public struct CharacterInfo
+        {
+            public int hp;
+            public int mp;
+            public int atk;
+            public int def;
+            public string tribe;
+            public string state;
+            public string job;
+            public bool emotion;
+        }
 
         static void Main(string[] args)
-		{
-			CPacketBufferManager.initialize(2000);
-			userlist = new List<CGameUser>();
+        {
+            CPacketBufferManager.initialize(2000);
+            userlist = new List<CGameUser>();
 
-			CNetworkService service = new CNetworkService();
-			// 콜백 매소드 설정.
-			service.session_created_callback += on_session_created;
-			// 초기화.
-			service.initialize();
+            CNetworkService service = new CNetworkService();
+            // 콜백 매소드 설정.
+            service.session_created_callback += on_session_created;
+            // 초기화.
+            service.initialize();
 
-			var host = Dns.GetHostEntry(Dns.GetHostName());
-			string local_IP = "";
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            string local_IP = "";
 
-			foreach(var ip in host.AddressList)
+            foreach (var ip in host.AddressList)
             {
-				if(ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                 {
-					local_IP = ip.ToString();
-					break;
-				}
+                    local_IP = ip.ToString();
+                    break;
+                }
             }
 
             //Access mysql database. And check if the connection is successful.
             string connStr = "server=localhost;user=root;database=ChatLog;port=3306;password=vhzptapahflA123";
             conn = new MySqlConnection(connStr);
-			
+
             try
             {
                 Console.WriteLine("Connecting to MySQL...");
                 conn.Open();
-				
+
                 //Check for connection
                 if (conn.State == System.Data.ConnectionState.Open)
                 {
@@ -64,153 +77,53 @@ namespace CSampleServer
 
             //service.listen("127.0.0.1", 7979, 100); // IP를 직접 입력하는 방식
             Console.WriteLine(string.Format("Get Local IP -> {0}", local_IP)); // 현재 컴퓨터의 IP 주소를 가져오는 방식
-			service.listen(local_IP, 7979, 100); // 포트는 7979로 고정
+            service.listen(local_IP, 7979, 100); // 포트는 7979로 고정
 
-			Console.WriteLine("Started!");
-			while (true)
-			{
-				//Console.Write(".");
-				System.Threading.Thread.Sleep(1000);
-			}
+            Console.WriteLine("Started!");
+            while (true)
+            {
+                //Console.Write(".");
+                System.Threading.Thread.Sleep(1000);
+            }
 
-			Console.ReadKey();
-		}
-
-		/// <summary>
-		/// 클라이언트가 접속 완료 하였을 때 호출됩니다.
-		/// n개의 워커 스레드에서 호출될 수 있으므로 공유 자원 접근시 동기화 처리를 해줘야 합니다.
-		/// </summary>
-		/// <returns></returns>
-		static void on_session_created(CUserToken token)
-		{
-			CGameUser user = new CGameUser(token);
-			user.callback_get_tokenlist += GetTokenList;
-
-			lock (userlist)
-			{
-				userlist.Add(user);
-			}
-		}
-
-		/// <summary>
-		/// 클라이언트가 접속 해제를 하였을 때 호출됩니다.
-		/// </summary>
-		/// <param name="user"></param>
-		public static void remove_user(CGameUser user)
-		{
-			lock (userlist)
-			{
-				userlist.Remove(user);
-			}
-		}
-
-		/// <summary>
-		/// 서버에 접속한 클라이언트 토큰 리스트를 반환한다.
-		/// </summary>
-		/// <returns>클라이언트 토큰 리스트</returns>
-		public static List<CGameUser> GetTokenList()
-        {
-			return userlist;
-        }
-
-		/// <summary>
-		/// 지금까지 기록된 채팅 로그를 데이터베이스에 저장한다.
-		/// </summary>
-		public static void MySqlSaveData(string message)
-		{
-            //The data in the chatlog_list list are stored in the chatlog_table table in the order in which they are listed. When saving a table, data is stored in the chatLog_Message column.
-            string sql = "INSERT INTO chatlog_table(chatLog_Message,chatLog_Date) VALUES(@chatLog_Message,@chatLog_Date)";
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-
-            //Take the current date and time and save it in the form of string.
-            string date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-            cmd.Parameters.AddWithValue("@chatLog_Message", message);
-            cmd.Parameters.AddWithValue("@chatLog_Date", date);
-            cmd.ExecuteNonQuery();
-
-            Console.WriteLine("Data is saved.");
+            Console.ReadKey();
         }
 
         /// <summary>
-        /// 데이터베이스에 저장된 채팅 로그를 가져온다.
+        /// 클라이언트가 접속 완료 하였을 때 호출됩니다.
+        /// n개의 워커 스레드에서 호출될 수 있으므로 공유 자원 접근시 동기화 처리를 해줘야 합니다.
         /// </summary>
-        /// <returns>저장된 채팅 로그</returns>
-        public static List<Dictionary<string, string>> MySqlGetChatLog()
-		{
-            //In the Mysql ChatLog data, if there is data in the chatlog_table table, the chatLog_Message column in the chatLog_dic dictionary is the value of the cl_message key, and the chatLog_Date column is added as the value of the cl_date key and returned to the list.
-            List<Dictionary<string, string>> chatLogList = new List<Dictionary<string, string>>();
-            string sql = "SELECT chatLog_Message, chatLog_Date FROM chatlog_table";
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-
-            while (rdr.Read())
-            {
-                Dictionary<string, string> chatLog_dic = new Dictionary<string, string>
-                {
-                    { "cl_message", rdr[0].ToString() },
-                    { "cl_date", rdr[1].ToString() }
-                };
-                chatLogList.Add(chatLog_dic);
-            }
-
-            rdr.Close();
-
-            return chatLogList;
-        }
-
-        public static bool IsSameMemberInDB(string member)
-		{
-            //Check the chatlog_member table data for data that matches the member column.
-            string sql = "SELECT * FROM chatlog_member WHERE member = @member";
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@member", member);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-
-            //If there is a matching member, return true.
-            if (rdr.Read())
-            {
-                rdr.Close();
-                return true;
-            }
-
-            rdr.Close();
-            return false;
-        }
-
-        public static string GetFirstDateMember(string member)
+        /// <returns></returns>
+        static void on_session_created(CUserToken token)
         {
-            //If the data in the chatlog_member table data matches the member column, it returns the data in the fastdate column in the form of a string, or in the form of an empty string.
-            string sql = "SELECT firstdate FROM chatlog_member WHERE member = @member";
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@member", member);
-            MySqlDataReader rdr = cmd.ExecuteReader();
+            CGameUser user = new CGameUser(token);
+            user.callback_get_tokenlist += GetTokenList;
 
-            if (rdr.Read())
+            lock (userlist)
             {
-                string fastdate = rdr[0].ToString();
-                rdr.Close();
-                return fastdate;
+                userlist.Add(user);
             }
-
-            rdr.Close();
-            return "";
         }
 
-        public static void SettingMemberData(string new_member)
+        /// <summary>
+        /// 클라이언트가 접속 해제를 하였을 때 호출됩니다.
+        /// </summary>
+        /// <param name="user"></param>
+        public static void remove_user(CGameUser user)
         {
-            //If the new_member parameter is not in the ChatLog data chatlog_member table member column, add the current date time to the new_member parameter firstdate column in the member column.
-            if (!IsSameMemberInDB(new_member))
+            lock (userlist)
             {
-                string sql = "INSERT INTO chatlog_member(member,firstdate) VALUES(@member,@firstdate)";
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-
-                string date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                cmd.Parameters.AddWithValue("@member", new_member);
-                cmd.Parameters.AddWithValue("@firstdate", date);
-                cmd.ExecuteNonQuery();
+                userlist.Remove(user);
             }
+        }
+
+        /// <summary>
+        /// 서버에 접속한 클라이언트 토큰 리스트를 반환한다.
+        /// </summary>
+        /// <returns>클라이언트 토큰 리스트</returns>
+        public static List<CGameUser> GetTokenList()
+        {
+            return userlist;
         }
 
         public static bool AccountCheckLogin(string id, string pw)
@@ -268,6 +181,54 @@ namespace CSampleServer
             else
             {
                 return false;
+            }
+        }
+
+        public static CharacterInfo SetInitCharacterInfo()
+        {
+            //Set the initial character information of the parameter id value.
+            CharacterInfo characterInfo = new CharacterInfo();
+
+            characterInfo.hp = 100;
+            characterInfo.mp = 50;
+            characterInfo.atk = 10;
+            characterInfo.def = 10;
+            characterInfo.tribe = "인간";
+            characterInfo.state = "정상";
+            characterInfo.job = "모험가";
+            characterInfo.emotion = false;
+
+            return characterInfo;
+        }
+
+        public static string GetCharacterInfo(string targetID)
+        {
+            //If the data in the character_data_table table in the character_database database has data such as the targetID parameter in the character_id column data, the data in the character_data column stored like the data in the corresponding character_id column are imported.
+            string sql = "SELECT * FROM character_data_table WHERE character_id = @id";
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@id", targetID);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+
+            CharacterInfo characterInfo = new CharacterInfo();
+
+            if (rdr.Read())
+            {
+                return rdr["character_data"].ToString();
+            }
+            else
+            {
+                characterInfo = SetInitCharacterInfo();
+
+                //Save the targetID parameter and the characterInfo variable in the character_data_table table.
+                string sql2 = "INSERT INTO character_data_table(character_id, character_data) VALUES(@id,@data)";
+                string data = JsonConvert.SerializeObject(characterInfo);
+                MySqlCommand cmd2 = new MySqlCommand(sql2, conn);
+                cmd2.Parameters.AddWithValue("@id", targetID);
+                cmd2.Parameters.AddWithValue("@data", data);
+                cmd2.ExecuteNonQuery();
+
+                rdr.Close();
+                return data;
             }
         }
     }
