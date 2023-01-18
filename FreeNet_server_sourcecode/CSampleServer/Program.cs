@@ -52,7 +52,7 @@ namespace CSampleServer
             }
 
             //Access mysql database. And check if the connection is successful.
-            string connStr = "server=localhost;user=root;database=ChatLog;port=3306;password=vhzptapahflA123";
+            string connStr = "server=localhost;user=root;database=chatacter_database;port=3306;password=vhzptapahflA123";
             conn = new MySqlConnection(connStr);
 
             try
