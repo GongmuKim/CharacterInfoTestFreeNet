@@ -209,14 +209,15 @@ namespace CSampleServer
             cmd.Parameters.AddWithValue("@id", targetID);
             MySqlDataReader rdr = cmd.ExecuteReader();
 
-            CharacterInfo characterInfo = new CharacterInfo();
-
             if (rdr.Read())
             {
+                rdr.Close();
                 return rdr["character_data"].ToString();
             }
             else
             {
+                rdr.Close();
+                CharacterInfo characterInfo = new CharacterInfo();
                 characterInfo = SetInitCharacterInfo();
 
                 //Save the targetID parameter and the characterInfo variable in the character_data_table table.
@@ -226,8 +227,7 @@ namespace CSampleServer
                 cmd2.Parameters.AddWithValue("@id", targetID);
                 cmd2.Parameters.AddWithValue("@data", data);
                 cmd2.ExecuteNonQuery();
-
-                rdr.Close();
+                
                 return data;
             }
         }
