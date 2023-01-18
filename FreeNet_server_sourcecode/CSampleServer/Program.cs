@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -211,8 +212,11 @@ namespace CSampleServer
 
             if (rdr.Read())
             {
+                //get character_data culum value
+                string characterData = rdr.GetString("character_data");
+
                 rdr.Close();
-                return rdr["character_data"].ToString();
+                return characterData;
             }
             else
             {
@@ -223,6 +227,7 @@ namespace CSampleServer
                 //Save the targetID parameter and the characterInfo variable in the character_data_table table.
                 string sql2 = "INSERT INTO character_data_table(character_id, character_data) VALUES(@id,@data)";
                 string data = JsonConvert.SerializeObject(characterInfo);
+                
                 MySqlCommand cmd2 = new MySqlCommand(sql2, conn);
                 cmd2.Parameters.AddWithValue("@id", targetID);
                 cmd2.Parameters.AddWithValue("@data", data);
