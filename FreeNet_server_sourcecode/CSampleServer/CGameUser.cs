@@ -111,6 +111,27 @@ namespace CSampleServer
                         send(response);
                     }
 					break;
+				case PROTOCOL.CHARACTER_DATA_SAVE_REQ:
+					{
+                        string[] get_data = msg.pop_string().Split('\n');
+                        string id = get_data[0];
+                        string data = get_data[1];
+
+                        CPacket response = CPacket.create((short)PROTOCOL.CHARACTER_DATA_SAVE_ACK);
+
+                        if (id.Length > 0 && data.Length > 0)
+						{
+							SaveCharacterInfo(id, data);
+                            response.push("Success");
+                            send(response);
+                        }
+						else
+						{
+                            response.push("Fail");
+                            send(response);
+                        }
+                    }
+					break;
             }
         }
 

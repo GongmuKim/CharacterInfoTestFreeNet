@@ -236,5 +236,35 @@ namespace CSampleServer
                 return data;
             }
         }
+
+        public static void SaveCharacterInfo(string targetID, string data)
+        {
+            //Save the targetID parameter and the characterInfo variable in the character_data_table table. Check if the targetId parameter matches the character_data_table table with the character_id.
+            string sql = "SELECT * FROM character_data_table WHERE character_id = @id";
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@id", targetID);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+
+            if (rdr.Read())
+            {
+                rdr.Close();
+                //If there is a match, update the character_data column with the data parameter.
+                string sql2 = "UPDATE character_data_table SET character_data = @data WHERE character_id = @id";
+                MySqlCommand cmd2 = new MySqlCommand(sql2, conn);
+                cmd2.Parameters.AddWithValue("@id", targetID);
+                cmd2.Parameters.AddWithValue("@data", data);
+                cmd2.ExecuteNonQuery();
+            }
+            else
+            {
+                rdr.Close();
+                //If there is no match, save the targetID parameter and the characterInfo variable in the character_data_table table.
+                string sql2 = "INSERT INTO character_data_table(character_id, character_data) VALUES(@id,@data)";
+                MySqlCommand cmd2 = new MySqlCommand(sql2, conn);
+                cmd2.Parameters.AddWithValue("@id", targetID);
+                cmd2.Parameters.AddWithValue("@data", data);
+                cmd2.ExecuteNonQuery();
+            }
+        }
     }
 }
