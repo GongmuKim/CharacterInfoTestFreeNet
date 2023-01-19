@@ -55,6 +55,8 @@ namespace CSampleServer
 
                         CPacket response = CPacket.create((short)PROTOCOL.ACCOUNT_LOGIN_ACK);
 
+						Console.WriteLine(string.Format("id : {0}\npw : {1}", id, pw));
+
 						if (id.Length <= 0 || id.Equals(""))
 						{
 							if (pw.Length <= 0 || pw.Equals(""))
