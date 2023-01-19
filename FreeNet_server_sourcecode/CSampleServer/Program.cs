@@ -127,23 +127,33 @@ namespace CSampleServer
             return userlist;
         }
 
-        public static bool AccountCheckLogin(string id, string pw)
+        public static string AccountCheckLogin(string id, string pw)
         {
-            //Check if the parameter id, pw values match the id, pw values in the account_data_table table in the chat_database database. Returns true if there is a match, false if not.
-            string sql = "SELECT * FROM account_data_table WHERE id = @id AND pw = @pw";
+            //Check the account_data_table table for data in the id column that matches the parameter id.
+            string sql = "SELECT * FROM account_data_table WHERE id = '" + id + "'";
             MySqlCommand cmd = new MySqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.Parameters.AddWithValue("@pw", pw);
             MySqlDataReader rdr = cmd.ExecuteReader();
 
-            if (rdr.Read())
+            //If there is no data in the id column that matches the parameter id, return false.
+            if (!rdr.HasRows)
             {
                 rdr.Close();
-                return true;
+                return "Fail\nID is not correct.";
             }
 
+            //If there is data in the id column that matches the parameter id, check the password column.
+            rdr.Read();
+            string password = rdr["password"].ToString();
             rdr.Close();
-            return false;
+
+            //If the password column matches the parameter pw, return true.
+            if (password == pw)
+            {
+                return "Success\n";
+            }
+
+            //If the password column does not match the parameter pw, return false.
+            return "Fail\nPassword is not correct.";
         }
 
         public static bool ChreateAccountCheck(string id)

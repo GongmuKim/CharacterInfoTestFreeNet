@@ -55,21 +55,36 @@ namespace CSampleServer
 
                         CPacket response = CPacket.create((short)PROTOCOL.ACCOUNT_LOGIN_ACK);
 
-						if (id.Length <= 0 || pw.Length <= 0)
+						if (id.Length <= 0)
 						{
-                            response.push("Fail\n");
+							if (pw.Length <= 0)
+							{
+                                response.push(string.Format("Fail\nID Password is Empty"));
+                                send(response);
+							}
+							else
+							{
+                                response.push(string.Format("Fail\nID is Empty"));
+                                send(response);
+							}
+                        }
+						else if(pw.Length <= 0)
+						{
+                            response.push(string.Format("Fail\nPassword is Empty"));
                             send(response);
                         }
                         else
 						{
-							if (AccountCheckLogin(id, pw))
+                            string[] checkLoginResult = AccountCheckLogin(id, pw).Split('\n');
+
+                            if (checkLoginResult[0].Equals("Success"))
 							{
                                 response.push(string.Format("Success\n{0}", id));
                                 send(response);
 							}
 							else
 							{
-								response.push("Fail\n");
+								response.push(string.Format("Fail\n{0}", checkLoginResult[1]));
 								send(response);
 							}
 						}
