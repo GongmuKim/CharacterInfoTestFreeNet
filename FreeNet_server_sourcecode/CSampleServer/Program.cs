@@ -143,7 +143,7 @@ namespace CSampleServer
 
             //If there is data in the id column that matches the parameter id, check the password column.
             rdr.Read();
-            string password = rdr["password"].ToString();
+            string password = rdr["pw"].ToString();
             rdr.Close();
 
             //If the password column matches the parameter pw, return true.
