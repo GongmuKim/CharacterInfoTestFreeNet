@@ -55,9 +55,9 @@ namespace CSampleServer
 
                         CPacket response = CPacket.create((short)PROTOCOL.ACCOUNT_LOGIN_ACK);
 
-						if (id.Length <= 0)
+						if (id.Length <= 0 || id.Equals(""))
 						{
-							if (pw.Length <= 0)
+							if (pw.Length <= 0 || pw.Equals(""))
 							{
                                 response.push(string.Format("Fail\nID Password is Empty"));
                                 send(response);
@@ -68,7 +68,7 @@ namespace CSampleServer
                                 send(response);
 							}
                         }
-						else if(pw.Length <= 0)
+						else if(pw.Length <= 0 || pw.Equals(""))
 						{
                             response.push(string.Format("Fail\nPassword is Empty"));
                             send(response);
